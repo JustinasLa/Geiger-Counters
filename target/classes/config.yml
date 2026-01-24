@@ -1,0 +1,185 @@
+# ====================================
+# Source location settings
+# ====================================
+source:
+  # World name where the radioactive source spawns
+  world: TFMC_S2
+  
+  # Define the search area using two corners
+  # Top-left corner (smaller X, smaller Z)
+  top-left:
+    x: -1000.0
+    z: -1000.0
+  
+  # Bottom-right corner (larger X, larger Z)
+  bottom-right:
+    x: 1000.0
+    z: 1000.0
+
+# ====================================
+# Detection settings
+# ====================================
+detection:
+  # Maximum distance to collect the radioactive source (blocks)
+  collection-distance: 20.0
+  
+  # Maximum distance for Geiger Counter detection (blocks)
+  max-detection-distance: 2500.0
+  
+  # Distance threshold for close/far range colors (blocks)
+  close-range-threshold: 200.0
+  
+  # Ring count thresholds - number of particle rings based on distance
+  ring-thresholds:
+    three-rings: 100.0  # Show 3 rings when closer than this distance
+    two-rings: 300.0    # Show 2 rings when closer than this distance (otherwise 1 ring)
+
+
+# ====================================
+# Particle effect colors (RGB format: 0-255)
+# ====================================
+colors:
+  # Close range (0 to close-range-threshold blocks)
+  close-range:
+    # Starting color (closest to source)
+    start:
+      red: 255
+      green: 255
+      blue: 255  # White
+    # Ending color (at threshold distance)
+    end:
+      red: 255
+      green: 0
+      blue: 255  # Purple
+  
+  # Far range (close-range-threshold to max-detection-distance)
+  far-range:
+    # Starting color (at threshold distance)
+    start:
+      red: 255
+      green: 0
+      blue: 255  # Purple
+    # Ending color (at max distance)
+    end:
+      red: 17
+      green: 0
+      blue: 17  # Dark Purple
+
+
+# ====================================
+# Reward items when players find the source
+# Tiered rarity system with weighted chances
+# ====================================
+drops:
+  # Weights for each rarity tier
+  tier-weights:
+    common: 45      # 45% chance
+    uncommon: 30    # 30% chance
+    rare: 15        # 15% chance
+    epic: 7         # 7% chance
+    legendary: 2.5  # 2.5% chance
+    mythical: 0.5   # 0.5% chance
+  
+  # Items in each rarity tier
+  # Format: "item_path:amount"
+  # Example: m.MATERIALS.ARCANE_DUST:5
+  tiers:
+    common:
+      - "m.FOODS.SAUSAGE:32"
+      - "m.FOODS.SAUSAGE:32"
+      - "m.FOODS.GRAIN_BREAD:32"
+      - "m.FOODS.GRAIN_BREAD:32"
+      - "m.FOODS.JAMON:32"
+      - "m.FOODS.JAMON:32"
+
+      - "m.MATERIALS.RAW_TIN:4"
+      - "m.MATERIALS.RAW_TIN:4"
+      - "m.MATERIALS.RAW_TIN:8"
+
+      - "v.raw_iron_block:32"
+      - "v.raw_iron_block:32"
+
+    uncommon:
+      - "m.MATERIALS.RAW_TIN:12"
+
+      - "m.MATERIALS.ABYSSALITE_FRAGMENT:4"
+      - "m.MATERIALS.ABYSSALITE_FRAGMENT:4"
+      - "m.MATERIALS.ABYSSALITE_FRAGMENT:8"
+
+      - "m.MATERIALS.MYTHRIL_FRAGMENT:2"
+      - "m.MATERIALS.MYTHRIL_FRAGMENT:2"
+
+      - "m.CONSUMABLES.WEAK_REPAIR_KIT:1"
+      - "m.CONSUMABLES.TOOL_REPAIR_KIT:1"
+
+      - "m.RESEARCH.LOST_KNOWLEDGE_SCRAP:1"
+
+    rare:
+      - "m.MATERIALS.ABYSSALITE_FRAGMENT:12"
+
+      - "m.MATERIALS.MYTHRIL_FRAGMENT:3"
+      - "m.MATERIALS.MYTHRIL_FRAGMENT:4"
+
+      - "m.MATERIALS.MYTHRILITE:1"
+      - "m.MATERIALS.MYTHRILITE:1"
+
+      - "v.raw_iron_block:64"
+
+      - "m.CONSUMABLES.MEDIUM_REPAIR_KIT:1"
+
+      - "m.RESEARCH.LOST_KNOWLEDGE_SCRAP:1"
+      - "m.RESEARCH.LOST_KNOWLEDGE_SCRAP:1"
+
+    epic:
+      - "m.MATERIALS.MYTHRILITE:2"
+      - "m.MATERIALS.MYTHRILITE:2"
+
+      - "m.CONSUMABLES.STRONG_REPAIR_KIT:1"
+
+      - "m.LOOT.TRIAL_KEY:1"
+      - "m.LOOT.TRIAL_KEY:1"
+      - "m.LOOT.TRIAL_KEY:1"
+      - "m.LOOT.TRIAL_KEY:1"
+
+      - "m.LOOT.SWORD_RUNESTONE:1"
+      - "m.LOOT.WAND_RUNESTONE:1"
+      - "m.LOOT.STAFF_RUNESTONE:1"
+      - "m.LOOT.ARMOR_RUNESTONE:1"
+
+    legendary:
+      - "m.MATERIALS.LEGENDARY_LEATHER:1"
+      - "m.MATERIALS.LEGENDARY_FEATHER:1"
+      - "m.MATERIALS.LEGENDARY_WOOL:1"
+
+      - "m.MATERIALS.LEGENDARY_LEATHER:2"
+      - "m.MATERIALS.LEGENDARY_FEATHER:2"
+      - "m.MATERIALS.LEGENDARY_WOOL:2"
+
+      - "m.CONSUMABLES.MAGIC_REPAIR_KIT:1"
+      - "m.CONSUMABLES.MAGIC_REPAIR_KIT:1"
+      - "m.CONSUMABLES.MAGIC_REPAIR_KIT:1"
+
+      - "m.LOOT.BASIC_GEMSTONE_POUCH:1"
+      - "m.LOOT.POLISHED_GEMSTONE_POUCH:1"
+
+    mythical:
+      - "m.LOOT.EPIC_ITEM_SKIN_SCROLL:1"
+      - "m.LOOT.LEGENDARY_ITEM_SKIN_SCROLL:1"
+
+      - "m.LOOT.RADIANT_GEMSTONE_POUCH:1"
+      - "m.LOOT.MYTHICAL_GEMSTONE_POUCH:1"
+
+      - "m.LOOT.RARE_MATERIAL_POUCH:1"
+      - "m.CURRENCY.POUCH_OF_COINS:1"
+
+
+# ====================================
+# Messages
+# ====================================
+messages:
+  # Message when player finds the radioactive source
+  # Supports & color codes and hex colors (&#RRGGBB)
+  found-source: "&#AA00FFYou have found the source of Arcane Radiation! &#FFFF00The source has moved."
+  
+  # Message when Geiger Counter breaks after finding source
+  dead-geiger: "&7Your Arcane Trace Detector has run out of fuel."

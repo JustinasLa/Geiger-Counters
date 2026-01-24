@@ -1,0 +1,13 @@
+tfmc\justin\models\ItemReward.class
+tfmc\justin\managers\GeigerManager.class
+tfmc\justin\config\GeigerConfiguration$ColorConfig.class
+tfmc\justin\handlers\ParticleRenderer.class
+tfmc\justin\utils\Utils.class
+tfmc\justin\managers\PluginManager.class
+tfmc\justin\geiger_counter.class
+tfmc\justin\handlers\ParticleRenderer$ParticleConfig.class
+tfmc\justin\listeners\PlayerListener.class
+tfmc\justin\models\TierReward.class
+tfmc\justin\config\GeigerConfiguration.class
+tfmc\justin\validators\GeigerValidator.class
+tfmc\justin\handlers\SourceHandler.class
