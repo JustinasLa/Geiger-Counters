@@ -170,24 +170,22 @@ public class GeigerConfiguration {
     }
     
     private ItemReward parseItemReward(String itemString) {
-        String[] parts = itemString.split(":");
-        if (parts.length >= 2) {
-            String itemPath = parts[0] + ":" + parts[1];
-            int amount = parseAmount(parts);
+        // Split on the last colon to separate item path from amount
+        int lastColonIndex = itemString.lastIndexOf(':');
+        if (lastColonIndex == -1) {
+            return null;
+        }
+        
+        String itemPath = itemString.substring(0, lastColonIndex);
+        String amountString = itemString.substring(lastColonIndex + 1);
+        
+        try {
+            int amount = Integer.parseInt(amountString);
             return new ItemReward(itemPath, amount);
+        } catch (NumberFormatException e) {
+            plugin.getLogger().warning("Invalid amount in item reward: " + itemString);
+            return null;
         }
-        return null;
-    }
-    
-    private int parseAmount(String[] parts) {
-        if (parts.length >= 3) {
-            try {
-                return Integer.parseInt(parts[2]);
-            } catch (NumberFormatException e) {
-                return 1;
-            }
-        }
-        return 1;
     }
     
     // ===== GETTERS =====
@@ -228,3 +226,4 @@ public class GeigerConfiguration {
         public int getBlue() { return blue; }
     }
 }
+
