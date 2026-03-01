@@ -52,33 +52,24 @@ public class GeigerManager {
     // Initialize the Geiger Counter system
     // ====================================
     public void initialize() {
-        plugin.getLogger().info("[Init] Starting Geiger Counter initialization...");
-        
-        plugin.getLogger().info("[Init] Loading TLibs API...");
         api = (ItemAPI) TLibs.getApiInstance(APIType.ITEM_API);
         
-        plugin.getLogger().info("[Init] Loading configuration...");
         configuration = new GeigerConfiguration(plugin);
         configuration.load();
         
-        plugin.getLogger().info("[Init] Creating validator...");
         validator = new GeigerValidator(plugin, api);
         
-        plugin.getLogger().info("[Init] Creating particle renderer...");
         particleRenderer = new ParticleRenderer(configuration);
         
-        plugin.getLogger().info("[Init] Creating source handler...");
         sourceHandler = new SourceHandler(plugin, configuration, api);
         
         // Spawn initial source
-        plugin.getLogger().info("[Init] Spawning initial radioactive source...");
         sourceHandler.moveSourceToRandomLocation();
         
         // Start player checking task
-        plugin.getLogger().info("[Init] Starting player check task...");
         startPlayerCheckTask();
         
-        plugin.getLogger().info("[Init] Geiger Counter initialization complete!");
+        plugin.getLogger().info("Geiger Counter plugin has been enabled.");
     }
     
     private void startPlayerCheckTask() {

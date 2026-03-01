@@ -50,8 +50,8 @@ public class SourceHandler {
         
         sourceLocation = new Location(config.getWorld(), randomX, surfaceY, randomZ);
         
-        plugin.getLogger().info(String.format("Radioactive source moved to X=%.1f Y=%.1f Z=%.1f", 
-            randomX, surfaceY, randomZ));
+        plugin.getLogger().info(String.format("Radioactive source moved to X = %.1f Z = %.1f", 
+            randomX, randomZ));
     }
     
     // ====================================

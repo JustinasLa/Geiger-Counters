@@ -13,14 +13,11 @@ public class geiger_counter extends JavaPlugin {
     public void onEnable() {
         instance = this;
         
-        // Save default config
         saveDefaultConfig();
         
-        // Initialize managers
         PluginManager.getInstance().initialize();
         GeigerManager.getInstance(this).initialize();
         
-        // Register listeners
         getServer().getPluginManager().registerEvents(new PlayerListener(), this);
         
         getLogger().info("geiger_counter has been enabled!");
