@@ -1,201 +1,148 @@
-# Geiger Counter
+# GeigerCounter
 
-A Minecraft Paper plugin that creates a treasure hunt gameplay mechanic where players use Geiger Counter item to track down a randomly spawning radioactive source for tiered loot rewards.
+**A Minecraft server plugin that turns exploration into a treasure hunt — track a hidden radioactive source by particle signal and claim tiered loot.**
 
-## Features
+![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white)
+![Paper](https://img.shields.io/badge/Paper-1.21+-blue)
+![Maven](https://img.shields.io/badge/Build-Maven-red?logo=apachemaven&logoColor=white)
+![Version](https://img.shields.io/badge/Version-1.0.0-green)
 
-- Use **Geiger Counter** item to detect a hidden radioactive source
-- Visual particle effects guide players toward the source location
-- Particle colors and ring counts change based on distance to source
-- Tiered reward system with 6 rarity levels (Common to Mythical)
-- Geiger Counter "runs out of charge" after finding the source, becoming a **Dead Geiger Counter**
-- Source automatically relocates after being discovered
-- Configurable search area, detection ranges, and particle effects
-- Fully customizable reward pools with weighted drop chances
+Built for the [TFMC](https://www.patreon.com/c/TFMCRP) roleplay server, where it runs in production as a server-wide scavenger-hunt event mechanic.
+
+---
+
+## What It Does
+
+Hold a **Geiger Counter** item and the world starts talking back: particle rings around you shift in color and count based on how close you are to a hidden radioactive source. Walk it down, collect the source, and a weighted loot table decides your prize — anywhere from common food to mythical skin scrolls. The counter burns out, the source relocates, and the hunt begins again.
+
+| | |
+|---|---|
+| **Signal tracking** | Particle rings guide players toward a randomly placed source — more rings and brighter colors mean closer |
+| **Tiered rewards** | 6 rarity levels (Common → Mythical) with fully weighted drop chances |
+| **Self-resetting hunt** | Collecting the source relocates it to a new random spot in the search area |
+| **Consumable gameplay** | The Geiger Counter "runs out of charge" on success, becoming a **Dead Geiger Counter** |
+| **Config-driven design** | Search area, detection ranges, particle colors, and reward pools all live in `config.yml` |
+
+## How It Works
+
+A repeating task checks every online player. For each player holding a Geiger Counter:
+
+1. The horizontal distance to the radioactive source is calculated (Y is ignored, so the signal works across terrain height).
+2. That distance is mapped to a particle configuration — ring count (1–3) from distance thresholds, and a color interpolated along a two-stage gradient (dark purple → purple far away, purple → white up close).
+3. The rings spawn around the player as a live "signal strength" readout.
+4. Within collection distance (20 blocks by default), the source is collected automatically: a tier is rolled by weight, a random item from that tier is granted, the counter is swapped for its dead version, and the source moves to a fresh random location.
 
 ## Architecture
 
-The plugin follows a modular architecture with clear separation of concerns:
+Small, deliberate footprint — each class has one job:
+
+```
+src/main/java/tfmc/justin/
+├── geiger_counter.java                # Entry point: wiring, lifecycle
+├── config/
+│   └── GeigerConfiguration.java       # config.yml loading: area, ranges, colors, rewards
+├── handlers/
+│   ├── ParticleRenderer.java          # Distance → ring count + color gradient rendering
+│   └── SourceHandler.java             # Source placement, collection, reward rolls
+├── listeners/
+│   └── PlayerListener.java            # Player event hooks
+├── managers/
+│   ├── GeigerManager.java             # Periodic player checks, component coordination
+│   └── PluginManager.java             # Plugin-wide initialization
+├── models/
+│   ├── TierReward.java                # Reward tier: weight + item pool
+│   └── ItemReward.java                # Single reward: item path + amount
+├── utils/
+│   └── Utils.java                     # Shared helpers
+└── validators/
+    └── GeigerValidator.java           # Is this item a Geiger Counter? (TLibs paths)
+```
 
 ```mermaid
 classDiagram
     class geiger_counter {
-        -geiger_counter instance
         +onEnable() void
         +onDisable() void
-        +getInstance() geiger_counter
-    }
-
-    class PluginManager {
-        -PluginManager instance
-        +getInstance() PluginManager
-        +initialize() void
     }
 
     class GeigerManager {
-        -geiger_counter instance
-        -JavaPlugin plugin
-        -GeigerConfiguration configuration
-        -GeigerValidator validator
-        -ParticleRenderer particleRenderer
-        -SourceHandler sourceHandler
-        -ItemAPI api
-        +getInstance(plugin: JavaPlugin) GeigerManager
-        +getInstance() GeigerManager
         +initialize() void
-        -startPlayerCheckTask() void
         -checkAllPlayers() void
-        -handlePlayerWithGeiger(player: Player, source: Location) void
-        -calculateHorizontalDistance(from: Location, to: Location) double
+        -handlePlayerWithGeiger(player, source) void
     }
 
     class GeigerConfiguration {
-        -JavaPlugin plugin
-        -World world
-        -double minX, maxX, minZ, maxZ
-        -double collectionDistance
-        -double maxDetectionDistance
-        -double closeRangeThreshold
-        -double threeRingsDistance
-        -double twoRingsDistance
-        -String messageFoundSource
-        -String messageDeadGeiger
-        -ColorConfig closeRangeStartColor
-        -ColorConfig closeRangeEndColor
-        -ColorConfig farRangeStartColor
-        -ColorConfig farRangeEndColor
-        -List~TierReward~ tierRewards
-        +GeigerConfiguration(plugin: JavaPlugin)
         +load() void
-        -loadWorld() void
-        -loadSearchArea() void
-        -loadDetectionSettings() void
-        -loadColorSettings() void
-        -loadMessages() void
-        -loadRewards() void
-        +getWorld() World
-        +getMinX() double
-        +getMaxX() double
-        +getMinZ() double
-        +getMaxZ() double
-        +getCollectionDistance() double
-        +getMaxDetectionDistance() double
-        +getCloseRangeThreshold() double
         +getTierRewards() List~TierReward~
     }
 
-    class GeigerValidator {
-        -JavaPlugin plugin
-        -ItemAPI api
-        +GeigerValidator(plugin: JavaPlugin, api: ItemAPI)
-        +isGeigerCounter(item: ItemStack) boolean
-    }
-
     class ParticleRenderer {
-        -GeigerConfiguration config
-        +ParticleRenderer(config: GeigerConfiguration)
-        +showParticleEffect(player: Player, distance: double) void
-        -calculateParticleConfig(distance: double) ParticleConfig
-        -calculateCloseRangeParticles(distance: double) ParticleConfig
-        -calculateFarRangeParticles(distance: double) ParticleConfig
-        -interpolateColor(start: int, end: int, progress: double) int
-        -calculateRingCount(distance: double) int
-        -spawnParticleRings(player: Player, config: ParticleConfig) void
-        -spawnSingleRing(player: Player, center: Location, dust: DustOptions, ringIndex: int) void
+        +showParticleEffect(player, distance) void
+        -calculateRingCount(distance) int
+        -interpolateColor(start, end, progress) int
     }
 
     class SourceHandler {
-        -JavaPlugin plugin
-        -GeigerConfiguration config
-        -ItemAPI api
-        -Random random
-        -Location sourceLocation
-        +SourceHandler(plugin: JavaPlugin, config: GeigerConfiguration, api: ItemAPI)
-        +getSourceLocation() Location
         +moveSourceToRandomLocation() void
-        +tryCollectSource(player: Player, distance: double) void
-        -collectSource(player: Player) void
-        -notifyPlayerOfCollection(player: Player) void
-        -replaceGeigerWithDeadVersion(player: Player) void
-        -giveReward(player: Player) void
-        -selectRandomTier(tiers: List~TierReward~) TierReward
-        -giveRewardItem(player: Player, reward: ItemReward, tierName: String) void
+        +tryCollectSource(player, distance) void
+        -giveReward(player) void
     }
 
-    class PlayerListener {
-        +onPlayerJoin(event: PlayerJoinEvent) void
+    class GeigerValidator {
+        +isGeigerCounter(item: ItemStack) boolean
     }
 
-    class TierReward {
-        -String tierName
-        -double weight
-        -List~ItemReward~ items
-        +TierReward(tierName: String, weight: double)
-        +addItem(item: ItemReward) void
-        +getTierName() String
-        +getWeight() double
-        +getItems() List~ItemReward~
-        +isEmpty() boolean
-    }
-
-    class ItemReward {
-        -String outputItem
-        -int outputAmount
-        +ItemReward(outputItem: String, outputAmount: int)
-        +getOutputItem() String
-        +getOutputAmount() int
-    }
-
-    geiger_counter "1" --> "1" PluginManager : initializes
-    geiger_counter "1" --> "1" GeigerManager : initializes
-    geiger_counter "1" --> "1" PlayerListener : registers
-    
-    GeigerManager "1" --> "1" GeigerConfiguration : creates
-    GeigerManager "1" --> "1" GeigerValidator : creates
-    GeigerManager "1" --> "1" ParticleRenderer : creates
-    GeigerManager "1" --> "1" SourceHandler : creates
-    GeigerManager "1" --> "1" ItemAPI : uses
-    
-    GeigerValidator "1" --> "1" ItemAPI : uses
-    
-    ParticleRenderer "1" --> "1" GeigerConfiguration : uses
-    
-    SourceHandler "1" --> "1" GeigerConfiguration : uses
-    SourceHandler "1" --> "1" ItemAPI : uses
-    
-    GeigerConfiguration "1" --> "*" TierReward : contains
-    TierReward "1" --> "*" ItemReward : contains
+    geiger_counter --> GeigerManager : initializes
+    GeigerManager --> GeigerConfiguration : creates
+    GeigerManager --> GeigerValidator : creates
+    GeigerManager --> ParticleRenderer : creates
+    GeigerManager --> SourceHandler : creates
+    GeigerConfiguration --> TierReward : contains
+    TierReward --> ItemReward : contains
 ```
 
-### Component Descriptions
+*Full diagram: [UML-Diagram.mmd](UML-Diagram.mmd)*
 
-- **geiger_counter**: Main plugin class that initializes managers and registers event listeners
-- **PluginManager**: Singleton manager for plugin-wide initialization
-- **GeigerManager**: Central coordinator that manages all Geiger Counter functionality, runs periodic player checks, and coordinates between components
-- **GeigerConfiguration**: Configuration loader that reads and provides access to all plugin settings including world bounds, detection ranges, colors, and rewards
-- **GeigerValidator**: Validates whether items are Geiger Counters using TLibs item paths
-- **ParticleRenderer**: Handles visual particle effects with dynamic colors and ring counts based on distance to the radioactive source
-- **SourceHandler**: Manages radioactive source location, collection detection, reward distribution, and Geiger Counter replacement with dead version
-- **PlayerListener**: Event listener for player-related events (placeholder for future functionality)
-- **TierReward**: Model representing a reward tier with weight and list of possible items
-- **ItemReward**: Model representing an individual item reward with path and amount
+### Design decisions
 
-## Dependencies
+- **Configuration over code** — the entire hunt is data: search area, thresholds, gradient colors, messages, and every reward pool are YAML edits, not releases.
+- **One scheduler task, not per-player listeners** — a single periodic check scans players and short-circuits for anyone not holding a counter, keeping the hot path cheap.
+- **Abstraction over item plugins** — items and rewards resolve through the TLibs `ItemAPI`, so one config format covers MMOItems, ItemsAdder, and vanilla items with a one-character prefix.
+
+## Installation
+
+1. Drop `geiger_counter-1.0.0.jar` into your server's `plugins/` folder
+2. Install **TLibs** (required). **MMOItems** / **ItemsAdder** are optional item sources
+3. Restart the server (or load with PlugManX)
+4. Configure `plugins/geiger_counter/config.yml` — the source spawns at a random location within the configured area
+
+### Requirements
 
 | Dependency | Required |
 |---|---|
 | [Paper](https://papermc.io/) 1.21+ | Yes |
+| Java 21 | Yes |
 | [TLibs](https://www.spigotmc.org/resources/tlibs.127713/) | Yes |
-| [MMOItems](https://www.spigotmc.org/resources/mmoitems-premium.39267/) | No |
-| [ItemsAdder](https://itemsadder.com/) | No |
+| [MMOItems](https://www.spigotmc.org/resources/mmoitems-premium.39267/) | Optional |
+| [ItemsAdder](https://itemsadder.com/) | Optional |
 
-## Installation
+## Usage
 
-1. Place `geiger_counter.jar` into your server's `plugins/` folder
-2. Make sure that **TLibs** is also installed. **MMOItems** and **ItemsAdder** are optional
-3. Reload the server or enable `geiger_counter-1.0.0` with PlugManX
-4. Configure `plugins/geiger_counter/config.yml` as needed
-5. The radioactive source will spawn in a random location within the configured area
+1. Obtain a **Geiger Counter** item (via TLibs/MMOItems/ItemsAdder)
+2. Hold it — particle rings appear, showing signal strength
+3. Follow the signal: more rings and lighter colors mean you're getting closer
+4. Get within **20 blocks** (default) to collect the source automatically
+5. Receive a reward rolled from the tiered loot pool; the counter becomes a **Dead Geiger Counter** and the source relocates
+
+### Reading the signal
+
+| Signal | Meaning |
+|---|---|
+| **3 rings** | Within 100 blocks — very close |
+| **2 rings** | Within 300 blocks — close |
+| **1 ring** | Beyond 300 blocks — far |
+| **White** | Very close (0–200 blocks) |
+| **Purple → dark purple** | Far away (200–2500 blocks) |
 
 ## Configuration
 
@@ -237,15 +184,12 @@ drops:
     epic: 7         # 7%
     legendary: 2.5  # 2.5%
     mythical: 0.5   # 0.5%
-  
+
   tiers:
     common:
       - "m.FOODS.SAUSAGE:32"
       - "v.raw_iron_block:32"
       - "ia.tfmc:mythril_ingot"
-    uncommon:
-      - "m.MATERIALS.ABYSSALITE_FRAGMENT:4"
-      - "m.CONSUMABLES.WEAK_REPAIR_KIT:1"
     # ... (see config.yml for full reward lists)
 
 # Messages
@@ -254,40 +198,15 @@ messages:
   dead-geiger: "&7Your Arcane Trace Detector has run out of fuel."
 ```
 
-### Configuration Options
+**Item path formats**
 
-| Key | Default | Description |
+| Source | Format | Example |
 |---|---|---|
-| `source.world` | `TFMC_S2` | World name where the radioactive source spawns |
-| `source.top-left` / `bottom-right` | ±1000 | Defines rectangular search area bounds |
-| `detection.collection-distance` | `20.0` | Distance (blocks) to collect the source |
-| `detection.max-detection-distance` | `2500.0` | Maximum range for Geiger Counter detection |
-| `detection.close-range-threshold` | `200.0` | Distance where particle colors shift |
-| `detection.ring-thresholds` | See above | Distance thresholds for 1, 2, or 3 particle rings |
-| `colors.close-range` / `far-range` | See above | RGB colors for particle gradient effect |
-| `drops.tier-weights` | See above | Percentage chance for each rarity tier |
-| `drops.tiers.*` | See config | Item reward pools for each tier (format: `path:amount`) |
-| `messages.found-source` | Success message | Message when player finds the source |
-| `messages.dead-geiger` | Break message | Message when Geiger Counter breaks |
+| MMOItems | `m.category.item_id` | `m.FOODS.SAUSAGE` |
+| ItemsAdder | `ia.namespace:item_id` | `ia.tfmc:mythril_ingot` |
+| Vanilla | `v.material` | `v.raw_iron_block` |
 
-## Usage
-
-1. **Obtain a Geiger Counter**: Get the custom item via TLibs/MMOItems/ItemsAdder
-2. **Hold the Geiger Counter**: Particle effects will appear showing direction and distance
-3. **Follow the Particles**: More rings = closer to source. Color shifts from purple -> white as you approach (can configure)
-4. **Find the Source**: Get within 20 blocks (default) to automatically collect it
-5. **Receive Rewards**: Get a random item from the tiered loot pool
-6. **Geiger Counter Breaks**: The item becomes a Dead Geiger Counter and the source relocates
-
-### Visual Feedback
-
-- **3 Particle Rings**: Within 100 blocks (very close)
-- **2 Particle Rings**: Within 300 blocks (close)
-- **1 Particle Ring**: Beyond 300 blocks (far)
-- **White Color**: Very close (0-200 blocks)
-- **Purple -> Dark Purple**: Far away (200-2500 blocks)
-
-## Reward Tiers
+**Reward tiers**
 
 | Tier | Weight | Typical Rewards |
 |---|---|---|
@@ -298,7 +217,23 @@ messages:
 | **Legendary** | 2.5% | Legendary materials, magic repair kits, gemstone pouches |
 | **Mythical** | 0.5% | Item skin scrolls, mythical pouches, rare currency |
 
+## Building from Source
+
+```bash
+git clone https://github.com/JustinasLa/Geiger-Counters.git
+cd Geiger-Counters
+mvn package
+```
+
+Requires JDK 21 and Maven. The TLibs and MMOItems jars are referenced as local system dependencies — adjust the paths in `pom.xml` to your local copies. The built jar is copied to the project root by the `package` phase.
+
+## Tech Stack
+
+- **Java 21** · **Paper API 1.21.3** · **Maven**
+- Bukkit event system, scheduler, and YAML configuration API
+- TLibs ItemAPI for cross-plugin item resolution
+
 ## Author
 
-Justin - TFMC
-[Donation Link](https://www.patreon.com/c/TFMCRP)
+**Justinas Launikonis** — plugin developer for TFMC
+[GitHub](https://github.com/JustinasLa) · [Support TFMC](https://www.patreon.com/c/TFMCRP)
