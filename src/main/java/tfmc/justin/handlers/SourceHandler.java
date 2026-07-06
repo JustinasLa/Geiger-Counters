@@ -4,6 +4,7 @@ import me.Plugins.TLibs.Objects.API.ItemAPI;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import tfmc.justin.config.GeigerConfiguration;
@@ -46,40 +47,51 @@ public class SourceHandler {
     public void moveSourceToRandomLocation() {
         double randomX = config.getMinX() + (config.getMaxX() - config.getMinX()) * random.nextDouble();
         double randomZ = config.getMinZ() + (config.getMaxZ() - config.getMinZ()) * random.nextDouble();
-        double surfaceY = config.getWorld().getHighestBlockYAt((int)randomX, (int)randomZ) + 1.0;
-        
-        sourceLocation = new Location(config.getWorld(), randomX, surfaceY, randomZ);
-        
-        plugin.getLogger().info(String.format("Radioactive source moved to X = %.1f Z = %.1f", 
-            randomX, randomZ));
+        moveSourceToLocation(randomX, randomZ);
     }
-    
+
+    // ====================================
+    // Move source to specific X/Z coordinates (Y snaps to surface)
+    // ====================================
+    public void moveSourceToLocation(double x, double z) {
+        double surfaceY = config.getWorld().getHighestBlockYAt((int)x, (int)z) + 1.0;
+
+        sourceLocation = new Location(config.getWorld(), x, surfaceY, z);
+
+        plugin.getLogger().info(String.format("Radioactive source moved to X = %.1f Z = %.1f",
+            x, z));
+    }
+
     // ====================================
     // Check if player is close enough to collect the source
     // ====================================
-    public void tryCollectSource(Player player, double distance) {
+    public void tryCollectSource(Player player, double distance, EquipmentSlot geigerSlot) {
         if (distance > config.getCollectionDistance()) {
             return;
         }
-        
-        collectSource(player);
+
+        collectSource(player, geigerSlot);
     }
-    
-    private void collectSource(Player player) {
+
+    private void collectSource(Player player, EquipmentSlot geigerSlot) {
         moveSourceToRandomLocation();
         notifyPlayerOfCollection(player);
-        replaceGeigerWithDeadVersion(player);
+        replaceGeigerWithDeadVersion(player, geigerSlot);
         giveReward(player);
     }
-    
+
     private void notifyPlayerOfCollection(Player player) {
         player.sendMessage(config.getMessageFoundSource());
     }
-    
-    private void replaceGeigerWithDeadVersion(Player player) {
-        // Remove active Geiger Counter
-        player.getInventory().setItemInMainHand(null);
-        
+
+    private void replaceGeigerWithDeadVersion(Player player, EquipmentSlot geigerSlot) {
+        // Remove active Geiger Counter from whichever hand held it
+        if (geigerSlot == EquipmentSlot.OFF_HAND) {
+            player.getInventory().setItemInOffHand(null);
+        } else {
+            player.getInventory().setItemInMainHand(null);
+        }
+
         // Give dead Geiger Counter
         try {
             ItemStack deadGeiger = api.getCreator().getItemFromPath(DEAD_GEIGER_PATH).clone();

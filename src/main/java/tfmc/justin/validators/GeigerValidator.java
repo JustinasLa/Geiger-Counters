@@ -13,12 +13,15 @@ public class GeigerValidator {
     
     private final JavaPlugin plugin;
     private final ItemAPI api;
-    
+
+    // Cached template so we don't hit the TLibs item creator every check
+    private ItemStack geigerTemplate;
+
     public GeigerValidator(JavaPlugin plugin, ItemAPI api) {
         this.plugin = plugin;
         this.api = api;
     }
-    
+
     // ====================================
     // Check if an item is a valid Geiger Counter by matching against TLibs item path
     // ====================================
@@ -26,13 +29,19 @@ public class GeigerValidator {
         if (item == null || !item.hasItemMeta()) {
             return false;
         }
-        
-        try {
-            ItemStack geigerTemplate = api.getCreator().getItemFromPath(GEIGER_COUNTER_PATH).clone();
-            return item.isSimilar(geigerTemplate);
-        } catch (Exception e) {
-            plugin.getLogger().warning("Failed to validate Geiger Counter: " + e.getMessage());
-            return false;
+
+        ItemStack template = getGeigerTemplate();
+        return template != null && item.isSimilar(template);
+    }
+
+    private ItemStack getGeigerTemplate() {
+        if (geigerTemplate == null) {
+            try {
+                geigerTemplate = api.getCreator().getItemFromPath(GEIGER_COUNTER_PATH).clone();
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to load Geiger Counter template: " + e.getMessage());
+            }
         }
+        return geigerTemplate;
     }
 }

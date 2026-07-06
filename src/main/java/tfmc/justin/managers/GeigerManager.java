@@ -6,7 +6,7 @@ import me.Plugins.TLibs.TLibs;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.java.JavaPlugin;
 import tfmc.justin.config.GeigerConfiguration;
 import tfmc.justin.handlers.ParticleRenderer;
@@ -72,6 +72,22 @@ public class GeigerManager {
         plugin.getLogger().info("Geiger Counter plugin has been enabled.");
     }
     
+    // ====================================
+    // Reload configuration from disk
+    // ====================================
+    public void reload() {
+        plugin.reloadConfig();
+        configuration.load();
+    }
+
+    public SourceHandler getSourceHandler() {
+        return sourceHandler;
+    }
+
+    public GeigerConfiguration getConfiguration() {
+        return configuration;
+    }
+
     private void startPlayerCheckTask() {
         Bukkit.getScheduler().runTaskTimer(plugin, this::checkAllPlayers, 0L, CHECK_INTERVAL_TICKS);
     }
@@ -80,26 +96,38 @@ public class GeigerManager {
     
     // ====================================
     // Check all online players to see if they're holding a Geiger Counter
+    // in either hand
     // ====================================
     private void checkAllPlayers() {
         Location source = sourceHandler.getSourceLocation();
         if (source == null) {
             return;
         }
-        
+
         for (Player player : Bukkit.getOnlinePlayers()) {
-            ItemStack heldItem = player.getInventory().getItemInMainHand();
-            
-            if (validator.isGeigerCounter(heldItem)) {
-                handlePlayerWithGeiger(player, source);
+            EquipmentSlot geigerSlot = findGeigerSlot(player);
+
+            if (geigerSlot != null) {
+                handlePlayerWithGeiger(player, source, geigerSlot);
             }
         }
     }
-    
-    private void handlePlayerWithGeiger(Player player, Location source) {
+
+    // Returns the hand holding a Geiger Counter, or null if neither
+    private EquipmentSlot findGeigerSlot(Player player) {
+        if (validator.isGeigerCounter(player.getInventory().getItemInMainHand())) {
+            return EquipmentSlot.HAND;
+        }
+        if (validator.isGeigerCounter(player.getInventory().getItemInOffHand())) {
+            return EquipmentSlot.OFF_HAND;
+        }
+        return null;
+    }
+
+    private void handlePlayerWithGeiger(Player player, Location source, EquipmentSlot geigerSlot) {
         double distance = calculateHorizontalDistance(player.getLocation(), source);
         particleRenderer.showParticleEffect(player, distance);
-        sourceHandler.tryCollectSource(player, distance);
+        sourceHandler.tryCollectSource(player, distance, geigerSlot);
     }
     
     // ===== DISTANCE CALCULATION =====

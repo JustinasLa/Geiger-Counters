@@ -1,6 +1,7 @@
 package tfmc.justin;
 
 import org.bukkit.plugin.java.JavaPlugin;
+import tfmc.justin.commands.GeigerCommand;
 import tfmc.justin.managers.PluginManager;
 import tfmc.justin.managers.GeigerManager;
 import tfmc.justin.listeners.PlayerListener;
@@ -19,6 +20,10 @@ public class geiger_counter extends JavaPlugin {
         GeigerManager.getInstance(this).initialize();
         
         getServer().getPluginManager().registerEvents(new PlayerListener(), this);
+
+        GeigerCommand geigerCommand = new GeigerCommand(GeigerManager.getInstance());
+        getCommand("geiger").setExecutor(geigerCommand);
+        getCommand("geiger").setTabCompleter(geigerCommand);
         
         getLogger().info("geiger_counter has been enabled!");
     }

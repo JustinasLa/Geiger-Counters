@@ -1,5 +1,15 @@
 main: tfmc.justin.geiger_counter
-version: 1.0.0
+version: 1.1.0
 name: geiger_counter
 author: Justin
 api-version: 1.21
+depend: [TLibs]
+commands:
+  geiger:
+    description: Geiger Counter admin commands
+    usage: /geiger <locate|move [x z]|reload>
+    permission: geiger.admin
+permissions:
+  geiger.admin:
+    description: Access to Geiger Counter admin commands
+    default: op
